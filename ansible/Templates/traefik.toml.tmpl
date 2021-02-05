@@ -1,0 +1,46 @@
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
+    [entryPoints.web.http.redirections.entryPoint]
+      to = "websecure"
+      scheme = "https"
+
+  [entryPoints.websecure]
+    address = ":443"
+
+  [entryPoints.metrics]
+    address = ":8082"
+
+  [entryPoints.ssh]
+    address = ":22"
+
+[api]
+  dashboard = true
+
+[http.middlewares]
+  [http.middlewares.simpleAuth.basicAuth]
+    users = [
+      "ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/",
+    ]
+
+[certificatesResolvers.le.acme]
+  caServer = "https://acme-v02.api.letsencrypt.org/directory"
+  email = "ryantiffany@fastmail.com"
+  storage = "acme.json"
+  [certificatesResolvers.le.acme.dnsChallenge]
+    provider = "dnsimple"
+    delayBeforeCheck = 0
+
+[providers.docker]
+  watch = true
+  network = "traefik"
+
+[providers.file]
+  directory = "/etc/traefik/dynamic"
+  watch = true
+
+[metrics]
+  [metrics.prometheus]
+    addEntryPointsLabels = true
+    addServicesLabels = true
+    entryPoint = "metrics"

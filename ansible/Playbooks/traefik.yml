@@ -1,0 +1,49 @@
+---
+  - hosts: traefik
+    become: true
+    vars:
+      traefik_version: 2.4.2
+    tasks:
+      - name: Update apt packages
+        apt: upgrade=yes update_cache=yes
+        when: ansible_facts['os_family'] == "Debian"
+      - name: Download traefik binary
+        get_url: 
+          url: https://github.com/traefik/traefik/releases/download/v{{ traefik_version }}/traefik_v{{ traefik_version }}_linux_amd64.tar.gz
+          dest: /tmp/traefik_v{{ traefik_version }}_linux_amd64.tar.gz
+      - name: Unarchive a file that is already on the remote machine
+        unarchive:
+          src: /tmp/traefik_v{{ traefik_version }}_linux_amd64.tar.gz
+          dest: /usr/local/bin/
+          remote_src: yes
+          owner: root
+          group: root
+          mode: '0755'
+      - name: Create a directory if it does not exist
+        ansible.builtin.file:
+          path: /etc/traefik
+          state: directory
+          mode: '0755'
+      - name: Define traefik main file
+        template:
+          src: ../Templates/traefik.toml.tmpl
+          dest: /etc/traefik/traefik.toml
+          owner: root
+          group: root
+          mode: '0664'
+      - name: Copy dynamic traefik files 
+        synchronize:
+          src: ../Templates/dynamic
+          dest: /etc/traefik/dynamic
+      - name: Copy traefik service file 
+        copy:
+          src: ../Templates/traefik.service
+          dest: /etc/systemd/system/traefik.service
+          owner: root
+          group: root
+          mode: '0664'
+      - name: Enable systemd service 
+        systemd:
+          name: traefik.service
+          state: started
+          enabled: yes

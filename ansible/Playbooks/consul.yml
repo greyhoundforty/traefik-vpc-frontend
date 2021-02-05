@@ -1,0 +1,58 @@
+---
+  - hosts: instances
+    become: true
+    vars_files:
+      - vars.yml
+    tasks:
+      - name: Update apt packages
+        apt: upgrade=yes update_cache=yes
+        when: ansible_facts['os_family'] == "Debian"
+      - name: Ensure unzip is installed
+        apt:
+          name: unzip
+          state: present
+      - name: Add apt-key
+        apt_key:
+          url: https://apt.releases.hashicorp.com/gpg
+          state: present
+      - name: Add consul repo
+        apt_repository:
+          repo: deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_lsb.codename }} main
+      - name: Install consul
+        apt:
+          name: consul
+          state: present
+          update_cache: yes
+      - name: Set consul client environment variable
+        blockinfile:
+          path: /home/ryan/.bashrc
+          block: |
+            export CONSUL_HTTP_ADDR="http://{{ ansible_ens3.ipv4.address }}:8500"
+      - name: Template consul server file
+        template:
+          src: ../Templates/server.hcl
+          dest: /etc/consul.d/server.hcl
+          owner: consul
+          group: consul
+          mode: '0640'
+      - name: Template consul client file
+        template:
+          src: ../Templates/consul-client.j2
+          dest: /etc/consul.d/consul.hcl
+          owner: consul
+          group: consul
+          mode: '0640'
+      - name: Reset consul directory permissions
+        file:
+          path: /etc/consul.d
+          state: directory
+          mode: '755'
+          owner: consul
+          group: consul
+      - name: enable consul service and start it
+        systemd:
+          name: consul.service
+          enabled: yes
+          state: started
+      - name: Reboot machine
+        reboot:

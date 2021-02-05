@@ -1,0 +1,10 @@
+[bastion]
+traefik ansible_host=${bastion} ansible_user=ryan
+
+[instances]
+%{ for instanceIndex, instance in instances ~}
+${instance.name} ansible_host=${instance.primary_network_interface.0.primary_ipv4_address} ansible_user=ryan
+%{ endfor ~}
+
+[instances:vars]
+ansible_ssh_extra_args='-i generated_key_rsa -o "StrictHostKeyChecking=no" -o ProxyCommand="ssh -i generated_key_rsa -o StrictHostKeyChecking=no -W %h:%p ryan@${bastion}"'

@@ -1,0 +1,3 @@
+encrypt_key: "n8nGDoWrgQpEvsOdAx4z78yMvANNc+XP8m3gxH6YjJk="
+region: "au-syd"
+consul_servers: "{{ groups['instances'] }}"

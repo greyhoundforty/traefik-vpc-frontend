@@ -1,0 +1,25 @@
+http:
+  middlewares:
+    simpleAuth:
+      basicAuth:
+        users:
+          - "ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/" 
+  routers:
+    consul:
+      rule: "Host(`consul-lab.clouddesigndev.com`)"
+      service: "consul"
+      tls:
+        certResolver: le
+  services:
+    consul:
+      loadBalancer:
+        servers:
+%{ for instanceIndex, instance in instances ~}
+- url: "http://${instance.primary_network_interface.0.primary_ipv4_address}:8500"
+%{ endfor ~}
+
+
+    
+      
+
+
