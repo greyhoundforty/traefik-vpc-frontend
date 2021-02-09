@@ -80,12 +80,17 @@ traefik | SUCCESS => {
 ```
 
 ### Templates
-
+Ansible uses Jinja2 templating to enable dynamic expressions and access to variables/facts. All templating happens on the Ansible controller before the task is sent and executed on the remote machine. This approach minimizes the package requirements on the remote machine and also limits the amount of data Ansible needs to pass to the remote machines.
 
 ### Playbooks
+Ansible Playbooks offer a repeatable, re-usable design for managing IT infrastructure. Playbooks can:
+ - declare application or service configurations
+ - orchestrate deployments in a single or multiple machines, in a defined order
+ - launch tasks synchronously or asynchronously
 
-Configure ansible to follow this https://dev.to/bendog/traefik-2-and-ubuntu-18-04-with-systemd-and-https-redirect-4fpo
+A playbook is composed of one or more ‘plays’ in an ordered list. A playbook runs in order from top to bottom. At minimum a playbook needs to define machines to run against and at least one task to execute.
 
+## And now for the live part
 
 [ansible]: https://www.ansible.com/resources/get-started
 [chef]: https://www.chef.io/
