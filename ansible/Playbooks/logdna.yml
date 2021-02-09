@@ -1,0 +1,28 @@
+---
+  - hosts: all
+    become: true
+    vars_files:
+      - vars.yml
+    tasks:
+      - name: Add logdna apt-key
+        apt_key:
+          url: https://repo.logdna.com/logdna.gpg
+          state: present
+      - name: Add logdna repo
+        apt_repository:
+          repo: deb https://repo.logdna.com stable main
+      - name: Install logdna-agent
+        apt:
+          name: logdna-agent
+          state: present
+          update_cache: yes
+      - name: set logdna-agent ingestion key 
+        shell: logdna-agent -k "{{ logdna_ingestion_key }}"
+      - name: set logdna-agent api endpoint 
+        shell: logdna-agent -s "LOGDNA_APIHOST=api.{{ region }}.logging.cloud.ibm.com"
+      - name: set logdna-agent logging endpoint 
+        shell: logdna-agent -s "LOGDNA_LOGHOST=logs.{{ region }}.logging.cloud.ibm.com"
+      - name: set logdna-agent tags
+        shell: logdna-agent -t "system:{{ ansible_hostname }},region:{{ region }}"
+      - name: enable service at start up 
+        shell: systemctl enable logdna-agent

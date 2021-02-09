@@ -5,17 +5,13 @@ Wants=network-online.target systemd-networkd-wait-online.service
 
 [Service]
 Restart=on-abnormal
-
 ; User and group the process will run as.
 User=traefik
 Group=traefik
-
 ; Always set "-root" to something safe in case it gets forgotten in the traefikfile.
 ExecStart=/usr/local/bin/traefik --configfile=/etc/traefik/traefik.toml
-
 ; Limit the number of file descriptors; see `man systemd.exec` for more limit settings.
 LimitNOFILE=1048576
-
 ; Use private /tmp and /var/tmp, which are discarded after traefik stops.
 PrivateTmp=true
 ; Use a minimal /dev (May bring additional security if switched to 'true', but it may not work on Raspberry Pi's or other devices, so it has been disabled in this dist.)
@@ -27,7 +23,6 @@ ProtectSystem=full
 ; … except /etc/ssl/traefik, because we want Letsencrypt-certificates there.
 ;   This merely retains r/w access rights, it does not add any new. Must still be writable on the host!
 ReadWriteDirectories=/etc/traefik/acme
-
 ; The following additional security directives only work with systemd v229 or later.
 ; They further restrict privileges that can be gained by traefik. Uncomment if you like.
 ; Note that you may have to add capabilities required by any plugins in use.

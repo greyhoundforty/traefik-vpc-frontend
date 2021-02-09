@@ -6,7 +6,7 @@ http:
           - "ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/" 
   routers:
     consul:
-      rule: "Host(`consul-lab.clouddesigndev.com`)"
+      rule: "Host(`${consul_name}.clouddesigndev.com`)"
       service: "consul"
       tls:
         certResolver: le

@@ -11,9 +11,6 @@
   [entryPoints.metrics]
     address = ":8082"
 
-  [entryPoints.ssh]
-    address = ":22"
-
 [api]
   dashboard = true
 
@@ -31,10 +28,6 @@
     provider = "dnsimple"
     delayBeforeCheck = 0
 
-[providers.docker]
-  watch = true
-  network = "traefik"
-
 [providers.file]
   directory = "/etc/traefik/dynamic"
   watch = true
@@ -44,3 +37,7 @@
     addEntryPointsLabels = true
     addServicesLabels = true
     entryPoint = "metrics"
+
+[log]
+  level = "DEBUG"
+  filePath = "/var/log/traefik.log"

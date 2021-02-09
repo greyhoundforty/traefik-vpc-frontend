@@ -32,7 +32,7 @@ module public_gateway {
 
 module subnet {
   source         = "git::https://github.com/cloud-design-dev/IBM-Cloud-VPC-Subnet-Module.git"
-  name           = "${var.name}-subnet"
+  name           = "${var.name}-maintenance-subnet"
   resource_group = data.ibm_resource_group.project.id
   network_acl    = module.vpc.default_network_acl
   address_count  = "128"
@@ -50,9 +50,19 @@ module security {
   vpc_id         = module.vpc.id
 }
 
+module flowlogs {
+  source         = "./flowlogs"
+  name           = var.name
+  resource_group = data.ibm_resource_group.project.id
+  vpc_id         = module.vpc.id
+  region         = var.region
+  subnet         = module.subnet.id
+  tags           = concat(var.tags, ["project:${var.name}", "region:${var.region}", "zone:${data.ibm_is_zones.region.zones[1]}"])
+}
+
 module traefik {
   source            = "git::https://github.com/cloud-design-dev/IBM-Cloud-VPC-Instance-Module.git"
-  name              = "${var.name}-traefik-instance"
+  name              = "${var.name}-traefik"
   vpc_id            = module.vpc.id
   subnet_id         = module.subnet.id
   ssh_keys          = [ibm_is_ssh_key.generated_key.id]
@@ -60,7 +70,7 @@ module traefik {
   zone              = data.ibm_is_zones.region.zones[1]
   security_group_id = module.security.maintenance_group
   tags              = concat(var.tags, ["project:${var.name}", "region:${var.region}", "zone:${data.ibm_is_zones.region.zones[1]}"])
-  user_data         = templatefile("${path.module}/install.yml", { domain = local.domain, generated_key = tls_private_key.ssh.public_key_openssh })
+  user_data         = templatefile("${path.module}/install.yml", { domain = data.digitalocean_domain.project.name, generated_key = tls_private_key.ssh.public_key_openssh })
 }
 
 resource ibm_is_floating_ip traefik {
@@ -73,26 +83,50 @@ resource ibm_is_floating_ip traefik {
 module consul {
   source            = "git::https://github.com/cloud-design-dev/IBM-Cloud-VPC-Instance-Module.git"
   count             = 3
-  name              = "${var.name}-consul-instance-${count.index + 1}"
+  name              = "${var.name}-consul-${count.index + 1}"
   vpc_id            = module.vpc.id
   subnet_id         = module.subnet.id
   ssh_keys          = [ibm_is_ssh_key.generated_key.id]
   resource_group    = data.ibm_resource_group.project.id
   zone              = data.ibm_is_zones.region.zones[1]
-  security_group_id = module.security.consul_group
+  security_group_id = module.security.services_group
   tags              = concat(var.tags, ["project:${var.name}", "region:${var.region}", "zone:${data.ibm_is_zones.region.zones[1]}"])
-  user_data         = templatefile("${path.module}/install.yml", { domain = local.domain, generated_key = tls_private_key.ssh.public_key_openssh })
+  user_data         = templatefile("${path.module}/install.yml", { domain = data.digitalocean_domain.project.name, generated_key = tls_private_key.ssh.public_key_openssh })
 }
 
 module dns {
-  source = "./dns"
+  source           = "./dns"
+  name             = var.name
+  domain           = data.digitalocean_domain.project.name
+  traefik_address  = ibm_is_floating_ip.traefik.address
+  consul_name      = "${var.name}-consul"
+  traefik_instance = module.traefik.instance
+  consul_instances = module.consul[*].instance
+  vpc_crn          = module.vpc.crn
+  resource_group   = data.ibm_resource_group.project.id
 }
 
 module ansible {
-  source          = "./ansible"
-  instances       = module.consul[*].instance
-  bastion         = ibm_is_floating_ip.traefik.address
-  private_key_pem = tls_private_key.ssh.private_key_pem
-  encrypt_key     = var.encrypt_key
-  region          = var.region
+  source               = "./ansible"
+  instances            = module.consul[*].instance
+  consul_name          = "${var.name}-consul"
+  traefik_name         = "${var.name}-traefik"
+  bastion              = ibm_is_floating_ip.traefik.address
+  private_key_pem      = tls_private_key.ssh.private_key_pem
+  encrypt_key          = var.encrypt_key
+  region               = var.region
+  logdna_ingestion_key = var.logdna_ingestion_key
 }
+
+# resource null_resource remove_traefik_address {
+#   provisioner local-exec {
+#     command = "ssh-keygen -f ~/.ssh/known_hosts -R ${ibm_is_floating_ip.traefik.address}"
+#   }
+# }
+
+# resource null_resource remove_internal_addresses {
+#   count = length(module.consul[*].primary_ip4_address)
+#   provisioner local-exec {
+#     command = "ssh-keygen -f ~/.ssh/known_hosts -R ${module.consul[count.index].primary_ip4_address}"
+#   }
+# }

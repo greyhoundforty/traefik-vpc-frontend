@@ -1,5 +1,5 @@
 resource "ibm_is_security_group" "maintenance_security_group" {
-  name           = "${var.name}-maintenance"
+  name           = "${var.name}-maintenance-security-group"
   vpc            = var.vpc_id
   resource_group = var.resource_group
 }
@@ -34,7 +34,7 @@ resource "ibm_is_security_group_rule" "maintenance_https_in" {
   }
 }
 
-resource "ibm_is_security_group_rule" "maintenance_all_open_internal" {
+resource "ibm_is_security_group_rule" "maintenance_all_open_dmz" {
   group     = ibm_is_security_group.maintenance_security_group.id
   direction = "inbound"
   remote    = var.subnet_cidr
@@ -46,20 +46,20 @@ resource "ibm_is_security_group_rule" "maintenance_allow_outbound" {
   remote    = "0.0.0.0/0"
 }
 
-resource "ibm_is_security_group" "consul_security_group" {
-  name           = "${var.name}-consul-security-group"
+resource "ibm_is_security_group" "services_security_group" {
+  name           = "${var.name}-services-security-group"
   vpc            = var.vpc_id
   resource_group = var.resource_group
 }
 
-resource "ibm_is_security_group_rule" "consul_all_open_internal" {
-  group     = ibm_is_security_group.consul_security_group.id
+resource "ibm_is_security_group_rule" "services_all_open_dmz" {
+  group     = ibm_is_security_group.services_security_group.id
   direction = "inbound"
-  remote    = ibm_is_security_group.maintenance_security_group.id
+  remote    = var.subnet_cidr
 }
 
 resource "ibm_is_security_group_rule" "consul_allow_outbound" {
-  group     = ibm_is_security_group.consul_security_group.id
+  group     = ibm_is_security_group.services_security_group.id
   direction = "outbound"
   remote    = "0.0.0.0/0"
 }

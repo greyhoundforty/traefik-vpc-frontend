@@ -1,8 +1,12 @@
 ---
   - hosts: traefik
     become: true
+    gather_facts: true
+    vars_files:
+      - vars.yml
     vars:
       traefik_version: 2.4.2
+      consul_servers: "{{ groups['instances'] }}"
     tasks:
       - name: Update apt packages
         apt: upgrade=yes update_cache=yes
@@ -19,8 +23,25 @@
           owner: root
           group: root
           mode: '0755'
-      - name: Create a directory if it does not exist
-        ansible.builtin.file:
+      - name: Grant traefik the ability to bind to priveleged ports
+        shell: setcap 'cap_net_bind_service=+ep' /usr/local/bin/traefik
+      - name: Ensure group traefik exists with correct gid
+        ansible.builtin.group:
+          name: traefik
+          state: present
+          gid: 321
+      - name: Add the user traefik
+        user:
+          name: traefik
+          comment: traefik user
+          uid: 321
+          shell: /usr/sbin/nologin
+          group: traefik
+          home: /var/www
+          system: true
+          create_home: false
+      - name: Create a traefik configuration directory if it does not already exist
+        file:
           path: /etc/traefik
           state: directory
           mode: '0755'
@@ -31,10 +52,37 @@
           owner: root
           group: root
           mode: '0664'
-      - name: Copy dynamic traefik files 
+      - name: Copy dynamic traefik files
         synchronize:
-          src: ../Templates/dynamic
+          src: ../Templates/dynamic/
           dest: /etc/traefik/dynamic
+      - name: Reset traefik directory permissions
+        file:
+          path: /etc/traefik/dynamic
+          state: directory
+          mode: '755'
+          owner: traefik
+          group: traefik
+      - name: Create traefik directory for lets encrypt certs 
+        file:
+          path: /etc/traefik/acme
+          path: /var/log/traefik.log
+          owner: traefik
+          group: traefik
+          state: directory
+      - name: Create traefik log file if it does not exist
+        file:
+          path: /var/log/traefik.log
+          owner: traefik
+          group: traefik
+          state: touch
+      - name: Create traefik acme file if it does not exist
+        file:
+          path: /etc/traefik/acme/acme.json
+          owner: traefik
+          group: traefik
+          state: touch
+          mode: '0600'
       - name: Copy traefik service file 
         copy:
           src: ../Templates/traefik.service
@@ -47,3 +95,5 @@
           name: traefik.service
           state: started
           enabled: yes
+      - name: Reboot machine
+        reboot:

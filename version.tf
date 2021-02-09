@@ -6,5 +6,9 @@ terraform {
       source           = "IBM-Cloud/ibm"
       required_version = ">= 1.13"
     }
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "2.5.1"
+    }
   }
 }

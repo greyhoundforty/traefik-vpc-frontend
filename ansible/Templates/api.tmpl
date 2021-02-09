@@ -5,7 +5,7 @@
     ]
 
 [http.routers.api]
-  rule = "Host(`monitor-lab.clouddesigndev.com`)"
+  rule = "Host(`${traefik_name}.clouddesigndev.com`)"
   entrypoints = ["websecure"]
   middlewares = ["simpleAuth"]
   service = "api@internal"
