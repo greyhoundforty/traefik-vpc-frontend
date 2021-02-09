@@ -27,3 +27,7 @@ override.tf.json
 
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 *.tfplan*
+ansible/Playbooks/vars.yml
+ansible/inventory
+ansible/generated_key_rsa
+ansible/ansible.cfg

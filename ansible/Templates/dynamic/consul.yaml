@@ -1,0 +1,25 @@
+http:
+  middlewares:
+    simpleAuth:
+      basicAuth:
+        users:
+          - "ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/" 
+  routers:
+    consul:
+      rule: "Host(`ganymede-consul.clouddesigndev.com`)"
+      service: "consul"
+      tls:
+        certResolver: le
+  services:
+    consul:
+      loadBalancer:
+        servers:
+- url: "http://10.240.64.5:8500"
+- url: "http://10.240.64.7:8500"
+- url: "http://10.240.64.4:8500"
+
+
+    
+      
+
+
